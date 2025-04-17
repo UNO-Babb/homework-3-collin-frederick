@@ -1,0 +1,54 @@
+Dots and Boxes - Design Document
+CIST 1600 - Homework 3
+
+
+What is the objective of the game?
+* Players take turns drawing lines between dots to complete boxes.
+* If a player completes a box, they claim it and get another turn.
+* The player with the most boxes at the end wins.
+
+How are player turns handled?
+* Player 1 and Player 2 alternate turns unless a box is completed.
+* Completing a box allows the player to go again.
+* The current player is tracked and displayed on screen.
+
+How is score displayed?
+* A scoreboard is visible showing Player 1 vs Player 2.
+* The score increases when a box is claimed.
+* Boxes show a letter (A or B) and color fill to indicate ownership.
+
+How are colors handled?
+* Each player selects their own color at the beginning of the game.
+* Lines drawn and boxes claimed will use the selected color.
+
+What elements are on the board?
+* Dots: 7x7 grid of static black dots.
+* Lines: Horizontal and vertical segments between dots (clickable).
+* Boxes: The area between every 4 adjacent dots that can be claimed.
+
+Game Layout:
+* A 7x7 dot grid is shown (which makes 6x6 = 36 boxes).
+* UI includes player name input, color pickers, start button.
+* Below the board, the current score and player turn is displayed.
+* At the end of the game, a winner message and "Play Again" button appears.
+
+Planned Functions
+Name
+	Purpose
+index()
+	Serves the index.html page.
+click_line()
+	Processes a line click from the frontend and updates the state.
+check_completed_boxes()
+	Checks if a clicked line completes one or more boxes.
+is_box_completed()
+	Determines if a specific box has all 4 sides.
+load_game()
+	Sends the current game state to the frontend.
+reset()
+	Resets all variables to start a new game.
+
+
+
+Design Sketch:
+7x7 dot grid with lines and boxes between dots – players claim boxes with color fill and initials
