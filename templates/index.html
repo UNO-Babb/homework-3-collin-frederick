@@ -1,61 +1,210 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hexagon Tile Game</title>
-    <style>
-        body {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-            font-family: Arial, sans-serif;
-            background-color: #f0f0f0;
-        }
-        #board {
-            display: grid;
-            grid-template-columns: repeat(10, 60px);
-            grid-template-rows: repeat(10, 52px);
-            gap: 2px;
-        }
-        .hex {
-            width: 60px;
-            height: 52px;
-            background-color: lightgray;
-            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
-            transition: background-color 0.2s;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dots and Boxes</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f9f9f9;
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    h1 { margin-bottom: 10px; }
+    #controls, #scoreboard, #gameEnd { margin-bottom: 20px; }
+    #gameInfo {
+      background: #fff;
+      padding: 10px;
+      border: 1px solid #ccc;
+      width: 500px;
+      margin-top: 10px;
+    }
+    #board {
+      display: grid;
+      grid-template-columns: repeat(13, 30px);
+      grid-template-rows: repeat(13, 30px);
+      gap: 2px;
+    }
+    .dot {
+      width: 10px;
+      height: 10px;
+      background-color: black;
+      border-radius: 50%;
+      align-self: center;
+      justify-self: center;
+    }
+    .h-line, .v-line {
+      background-color: lightgray;
+      cursor: pointer;
+    }
+    .h-line {
+      width: 30px;
+      height: 10px;
+    }
+    .v-line {
+      width: 10px;
+      height: 30px;
+    }
+    .box {
+      width: 30px;
+      height: 30px;
+      background-color: white;
+      text-align: center;
+      line-height: 30px;
+      font-weight: bold;
+      font-size: 14px;
+    }
+  </style>
 </head>
 <body>
+  <h1>Dots and Boxes</h1>
+  <div id="controls">
+    <label>Player 1 Name: <input type="text" id="player1Name" /></label>
+    <label>Color: <input type="color" id="color1" value="#4CAF50" /></label>
+    <br>
+    <label>Player 2 Name: <input type="text" id="player2Name" /></label>
+    <label>Color: <input type="color" id="color2" value="#2196F3" /></label>
+    <br>
+    <button id="startGame">Start Game</button>
+    <div id="gameInfo">
+      <h3>How to Play:</h3>
+      <ul>
+        <li>Players take turns clicking between dots to draw lines.</li>
+        <li>If a player completes a box, they claim it and get another turn.</li>
+        <li>The game ends when all boxes are claimed. Most boxes wins!</li>
+      </ul>
+    </div>
+  </div>
 
-<div id="board">
-    <!-- Hexagonal tiles will be added here on clicks -->
-</div>
+  <div id="playerStatus" class="hidden"></div>
 
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script>
-    $(document).ready(function() {
-        // Create an empty board of hex tiles
-        for (let i = 0; i < 100; i++) {
-            const hexTile = $('<div class="hex"></div>');
-            hexTile.data("clicked", false);  // Track if a tile has been clicked
-            $('#board').append(hexTile);
+  <div id="scoreboard" class="hidden">
+    <strong>Score:</strong> <span id="score1">0</span> - <span id="score2">0</span>
+    <button id="resetBtn">Reset</button>
+  </div>
+
+  <div id="board"></div>
+
+  <div id="gameEnd" class="hidden">
+    <h2 id="winnerText"></h2>
+    <button id="playAgain">Play Again</button>
+  </div>
+
+  <script>
+    const board = document.getElementById('board');
+    const size = 7;
+    let playerNames = {1: 'Player 1', 2: 'Player 2'};
+    let playerColors = {1: '#4CAF50', 2: '#2196F3'};
+    let currentPlayer = 1;
+
+    function createBoard() {
+      board.innerHTML = '';
+      for (let row = 0; row < size * 2 - 1; row++) {
+        for (let col = 0; col < size * 2 - 1; col++) {
+          const key = `${row},${col}`;
+          if (row % 2 === 0 && col % 2 === 0) {
+            board.appendChild(createDot());
+          } else if (row % 2 === 0) {
+            board.appendChild(createLine('h-line', row, col));
+          } else if (col % 2 === 0) {
+            board.appendChild(createLine('v-line', row, col));
+          } else {
+            board.appendChild(createBox(row, col));
+          }
         }
+      }
+    }
 
-        // Add color to hex tiles on click
-        $('#board').on('click', '.hex', function() {
-            if (!$(this).data("clicked")) {  // Only allow one click per tile
-                $.getJSON('/add_tile', function(data) {
-                    $(this).css('background-color', data.color);
-                    $(this).data("clicked", true);  // Mark as clicked
-                }.bind(this));
-            }
+    function createDot() {
+      const el = document.createElement('div');
+      el.className = 'dot';
+      return el;
+    }
+
+    function createLine(className, row, col) {
+      const el = document.createElement('div');
+      el.className = className;
+      const key = `${row},${col}`;
+      el.onclick = () => {
+        fetch('/click_line', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ key, row, col })
+        }).then(res => res.json()).then(data => {
+          if (data.error) {
+            alert(data.error);
+            return;
+          }
+          el.style.backgroundColor = playerColors[currentPlayer];
+          updateBoxes(data.boxes);
+          updateScores(data.scores);
+          currentPlayer = data.current_player;
+          updateStatus();
+          if (data.game_over) {
+            showGameEnd(data.scores);
+          }
         });
-    });
-</script>
+      };
+      return el;
+    }
 
+    function createBox(row, col) {
+      const el = document.createElement('div');
+      el.className = 'box';
+      el.id = `box-${row},${col}`;
+      return el;
+    }
+
+    function updateBoxes(boxes) {
+      Object.keys(boxes).forEach(key => {
+        const el = document.getElementById(`box-${key}`);
+        if (el && el.textContent === '') {
+          const player = boxes[key];
+          el.textContent = player === 1 ? 'A' : 'B';
+          el.style.backgroundColor = playerColors[player];
+        }
+      });
+    }
+
+    function updateScores(scores) {
+      document.getElementById('score1').textContent = scores[1];
+      document.getElementById('score2').textContent = scores[2];
+    }
+
+    function updateStatus() {
+      document.getElementById('playerStatus').textContent = `Current Turn: ${playerNames[currentPlayer]}`;
+    }
+
+    function showGameEnd(scores) {
+      document.getElementById('playerStatus').classList.add('hidden');
+      document.getElementById('gameEnd').classList.remove('hidden');
+      const winner =
+        scores[1] > scores[2] ? playerNames[1]
+        : scores[2] > scores[1] ? playerNames[2]
+        : "It's a tie!";
+      document.getElementById('winnerText').textContent = `${winner} wins!`;
+    }
+
+    document.getElementById('startGame').onclick = () => {
+      playerNames[1] = document.getElementById('player1Name').value || 'Player 1';
+      playerNames[2] = document.getElementById('player2Name').value || 'Player 2';
+      playerColors[1] = document.getElementById('color1').value;
+      playerColors[2] = document.getElementById('color2').value;
+      document.getElementById('controls').classList.add('hidden');
+      document.getElementById('scoreboard').classList.remove('hidden');
+      document.getElementById('playerStatus').classList.remove('hidden');
+      createBoard();
+      updateStatus();
+    };
+
+    document.getElementById('resetBtn').onclick = () => {
+      fetch('/reset', { method: 'POST' }).then(() => location.reload());
+    };
+    document.getElementById('playAgain').onclick = () => location.reload();
+  </script>
 </body>
 </html>

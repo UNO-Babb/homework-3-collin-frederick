@@ -1,0 +1,13 @@
+Player1: Alice, #4CAF50
+Player2: Bob, #2196F3
+Turn: Player1
+
+# Lines clicked (row,col)
+Line: 0,1
+Line: 0,3
+Line: 2,1
+Line: 3,2
+
+# Boxes claimed (row,col,Player)
+Box: 1,2, Player1
+Box: 3,3, Player2
